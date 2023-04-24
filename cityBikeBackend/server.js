@@ -9,11 +9,64 @@ app.use(cors());
 
 
 // an api call that sends every station from the database. Small enough data set to send everything.
+// if stationName parameter is included, will instead send only stations that match the search.
 app.get('/api/stations', (req, res) => {
-  citybikedata.all('SELECT * FROM stations', (err, rows) => {
+  let query = `SELECT * FROM stations`
+  // check for additional query parameters
+  if (req.query.hasOwnProperty('stationName')) {
+    query += ` WHERE Dname LIKE '%${req.query.stationName}%' COLLATE NOCASE OR Rname LIKE '%${req.query.stationName}%' COLLATE NOCASE`;
+  }
+  else{}
+  citybikedata.all(query, (err, rows) => {
 
     if (err) {
       console.error(err.message);
+      res.status(500).send('Internal server error');
+    } else {
+      res.send(rows);
+    }
+  });
+});
+
+
+
+// master api call that can take a few parameters. Parameters are station name, ordering and page number.
+
+app.get('/api/journeys', (req, res) => {
+  let query= `SELECT * FROM journeys`;
+  // check for additional query parameters
+  if (req.query.hasOwnProperty('count')) {
+    query=`SELECT COUNT(*) FROM journeys`;
+  }
+  if (req.query.hasOwnProperty('stationName') && req.query.hasOwnProperty('count')) {
+    // if we're counting outbound and inbound journeys from a certain station, we need both cases in separate queries.
+    query+= ` WHERE Dname LIKE '%${req.query.stationName}%' COLLATE NOCASE UNION ALL SELECT COUNT(*) FROM journeys WHERE Rname LIKE '%${req.query.stationName}%' COLLATE NOCASE`;
+  }
+  else if (req.query.hasOwnProperty('stationName') && !req.query.hasOwnProperty('count')) {
+    // if not counting, proceed normally.
+    query += ` WHERE Dname LIKE '%${req.query.stationName}%' COLLATE NOCASE OR Rname LIKE '%${req.query.stationName}%' COLLATE NOCASE`;
+  }
+  else{}
+  if (req.query.hasOwnProperty('orderBy') && !req.query.hasOwnProperty('count')) {
+    query += ` ORDER BY ${req.query.orderBy}`;
+  }
+  else{}
+
+  if (req.query.hasOwnProperty('pageNum') && !req.query.hasOwnProperty('count')) {
+    // same as below but now we get the pageNum'th page.
+    const offset = (parseInt(req.query.pageNum) - 1) * 100;
+    query += ` LIMIT 100 OFFSET ${offset}`;
+  }
+  else if(!req.query.hasOwnProperty('count')){
+    // if not counting, we dont want to choke the browser with a million lines, so we get the first 100.
+    query += ` LIMIT 100 OFFSET 0`;
+  }
+  else{}
+
+  citybikedata.all(query, (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      console.log(query)
       res.status(500).send('Internal server error');
     } else {
       res.send(rows);
@@ -24,60 +77,3 @@ app.get('/api/stations', (req, res) => {
 app.listen(3000, () => {
   console.log('Server listening on port 3000');
 });
-
-// an api call that sends page <:Page> of journeys, sorted by departure station name and return station name.
-
-app.get('/api/journeys/:Page', (req, res) => {
-  const start=(req.params.Page-1)*100;
-  citybikedata.all(`SELECT * FROM journeys ORDER BY Dname, Rname LIMIT 100 OFFSET ?`,start, (err, rows) => {
-
-    if (err) {
-      console.error(err.message);
-      res.status(500).send('Internal server error');
-    } else {
-      res.send(rows);
-   }
-  });
-});
-
-//api call to search for a particular station as departure or return station, case insensitive search.
-app.get('/api/search/:Search', (req, res) => {
-  const search='%'+req.params.Search+'%'
-  citybikedata.all(`SELECT * FROM journeys WHERE Dname like ? COLLATE NOCASE OR Rname like ? COLLATE NOCASE ORDER BY Dname, Rname`, search, search, (err, rows) => {
-
-    if (err) {
-      console.error(err.message);
-      res.status(500).send('Internal server error');
-    } else {
-      res.send(rows);
-   }
-  });
-});
-
-//api call to count journeys from and to a particular station
-app.get('/api/count/:Station', (req, res) => {
-  result=[];
-  const station=req.params.Station
-  citybikedata.all(`SELECT COUNT(*) FROM journeys WHERE Dname=? COLLATE NOCASE`, station, (err, amount) => {
-    if (err) {
-      console.error(err.message);
-      res.status(500).send('Internal server error');
-      result=[];
-    } else {
-      result.push(amount);
-      citybikedata.all(`SELECT COUNT(*) FROM journeys WHERE Rname=? COLLATE NOCASE`, station, (err, amount) => {
-        if (err) {
-          console.error(err.message);
-          res.status(500).send('Internal server error');
-          result=[];
-        } else {
-          result.push(amount);
-          res.send(result);
-          result=[];
-        }
-      });
-    }
-  });
-});
-
-//these api's were created to test things out. I'm probably going to create one "master" api that can do all of these and more.
