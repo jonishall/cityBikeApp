@@ -9,8 +9,29 @@
 </head>
 <body>
   <div style="width: 100%; overflow: hidden;">
-<br><br><br>
+    <form>
+      <label for="stationName">Station Name:</label>
+      <input type="text" id="stationName" name="stationName">
+      <label for="orderBy">Sort by:</label>
+      <select id="orderBy" name="orderBy">
+        <option value="None">None</option>
+        <option value="Dname">Departure station name</option>
+        <option value="Rname">Arrival station name</option>
+        <option value="Distance">Distance</option>
+        <option value="Duration">Duration</option>
+      </select>
+      <label for="pageNum">Page:</label>
+      <input type="number" id="pageNum" name="pageNum" value="1" min="1">
+      <button type="button"id="searchbutton">Search</button>
+    </form>
     <div id="map" class="map" style="width: 500px; height: 400px; float:left;">
+    </div>
+    <div id="station" style="width: 210px; height: 400px; float:left; overflow-y:auto">
+      <table id="stationlist">
+        <tr>
+          <th>Station Name</th>
+        </tr>
+      </table>
     </div>
     <div id="journeytable" style="margin-left: 500px; height: 400px; width: 500px; overflow-y: auto">
       <table id="journeylist">
@@ -23,9 +44,8 @@
       </table>
     </div>
   </div>
+
 </body>
-
 <script src=script.js>
-
 </script>
 </html>
