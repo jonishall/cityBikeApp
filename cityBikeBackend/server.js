@@ -15,11 +15,12 @@ app.get('/api/stations', (req, res) => {
   let param=[];
   // check for additional query parameters
   if (req.query.hasOwnProperty('stationName')) {
-    query += ` WHERE Dname LIKE ? COLLATE NOCASE OR Rname LIKE ? COLLATE NOCASE`;
-    param=[`%${req.query.stationName}%`,`%${req.query.stationName}%`];
+    query += ` WHERE Nimi LIKE ? COLLATE NOCASE`;
+    param=[`%${req.query.stationName}%`];
   }
   else{}
-  citybikedata.all(query, (err, rows) => {
+  query+=` ORDER BY Nimi`;
+  citybikedata.all(query, param, (err, rows) => {
     if (err) {
       console.error(err.message);
       res.status(500).send('Internal server error');
