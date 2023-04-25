@@ -55,3 +55,40 @@ var osmLayer = new ol.layer.Tile({
   source: osmSource
 });
 map.addLayer(osmLayer);
+
+function loadjourneys(input){
+  query='http://localhost:3000/api/journeys'
+  let jlist=document.getElementById('journeylist');
+  jlist.innerHTML=`<tr>
+    <th>Departure station</th>
+    <th>Return station</th>
+    <th>Distance (km)</th>
+    <th>Duration (min)</th>
+  </tr>`
+  let pholder=''
+  //check for parameters
+  if(input.length>0){
+    query+='?'
+    for(let i=0; i<input.length; i++){
+      query+=input[i]+'&';
+    }
+  }
+  // display data in the table created for journeys
+  fetch(query).then(response => response.json())
+  .then(data => {
+    for(let i=0; i<data.length; i++){
+      pholder+=`
+      <tr>
+        <td> ${data[i].Dname} </td>
+        <td> ${data[i].Rname} </td>
+        <td> ${((data[i].Distance)/1000).toFixed(2)} </td>
+        <td> ${((data[i].Duration)/60).toFixed(2)} </td>
+        <td>
+      </tr>
+      `;
+      }
+      jlist.innerHTML+=pholder
+    });
+  }
+// initialize the table with default, unsorted page 1
+loadjourneys([]);

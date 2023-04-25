@@ -1,3 +1,5 @@
-body {background-color: black; color: white; margin: auto; width: 50%;}
-img{display: block; width: 50%;}
-.viiva{border-left:6px solid blue; height:400px; color:blue;}
+body {background-color: black; color: white; margin: auto;}
+table, th, td {
+  border: 1px solid white;
+  border-collapse: collapse;
+}
