@@ -1,5 +1,7 @@
 var features=[]; //global variable that will contain all the points that will be drawn on the map
 const searchbutton=document.getElementById("searchbutton");
+
+// initializing map view
 fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
   .then(response => response.json())
   .then(data => {
@@ -42,8 +44,7 @@ fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
         var name = feature.get('name');
         // call the station with the name
        loadstations([`stationName=${feature.values_.name}`]);
-       loadjourneys([`stationName=${feature.values_.name}`, `orderBy=Dname`])
-
+       loadjourneys([`stationName=${feature.values_.name}`, `orderBy=Dname`]);
       }
    })
   })
@@ -62,7 +63,10 @@ var osmSource = new ol.source.OSM();
 var osmLayer = new ol.layer.Tile({
   source: osmSource
 });
+
 map.addLayer(osmLayer);
+
+// loads a list of journeys by parameter and displays them in journeys table
 function loadjourneys(input){
   let query='http://localhost:3000/api/journeys'
   let jlist=document.getElementById('journeylist');
@@ -97,6 +101,9 @@ function loadjourneys(input){
     jlist.innerHTML+=pholder
   });
 }
+
+
+//same as loadjourneys but for stations
 function loadstations(input){
   let query='http://localhost:3000/api/stations'
   let slist=document.getElementById('stationlist');
@@ -114,12 +121,25 @@ function loadstations(input){
   // display data in the table created for stations
   fetch(query).then(response => response.json())
   .then(data => {
-  for(let i=0; i<data.length; i++){
-    pholder+=`<tr>
-                <td> ${data[i].Nimi} </td>
-              </tr>`;
-    }
-    slist.innerHTML+=pholder
+    for(let i=0; i<data.length; i++){
+      pholder+=`<tr>
+                  <td> <a href="#" class="station-link" stationx=${data[i].x} stationy=${data[i].y}> ${data[i].Nimi} </a> </td>
+                  </tr>`;
+                }
+      slist.innerHTML+=pholder;
+      const stationLinks = document.querySelectorAll(".station-link");
+        stationLinks.forEach(link => {
+          link.addEventListener("click", function(event) {
+            event.preventDefault();
+            const stationName = link.innerText;
+            loadjourneys([`stationName=${stationName}`]);
+            var newCenter = ol.proj.fromLonLat([link.getAttribute("stationx"), link.getAttribute("stationy")]);
+            map.setView(new ol.View({
+              center: newCenter,
+              zoom: 14
+          }));
+      });
+    });
   });
 }
 
@@ -145,4 +165,5 @@ searchbutton.addEventListener('click', ()=>{
   }
   loadjourneys(param);
   loadstations([`stationName=${stationName}`]);
+
 });
