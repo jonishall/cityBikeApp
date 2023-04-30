@@ -25,6 +25,7 @@ fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
       })
     });
     map.addLayer(vectorLayer); //add the layer of points to the map
+
     // Create a select interaction with a custom style function, so you can select a station
     var selectInteraction = new ol.interaction.Select({
       style: function(feature) {
@@ -37,6 +38,8 @@ fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
         });
       }
     });
+
+    // find station info when clicking a map point
     map.addInteraction(selectInteraction);
     selectInteraction.on('select', function(event) {
       var feature = event.selected[0];
@@ -45,6 +48,7 @@ fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
         // call the station with the name
        loadstations([`stationName=${feature.values_.name}`]);
        loadjourneys([`stationName=${feature.values_.name}`, `orderBy=Dname`]);
+       loadview(feature.values_.name)
       }
    })
   })
@@ -133,11 +137,48 @@ function loadstations(input){
             event.preventDefault();
             const stationName = link.innerText;
             loadjourneys([`stationName=${stationName}`]);
+            // center map to the selected station
             var newCenter = ol.proj.fromLonLat([link.getAttribute("stationx"), link.getAttribute("stationy")]);
             map.setView(new ol.View({
               center: newCenter,
               zoom: 14
           }));
+          // highlight the selected station
+          var vectorLayer = map.getAllLayers()[1];
+          var features=vectorLayer.getSource().getFeatures();
+          features.forEach(function(feature) {
+            if (feature.get('name') === stationName) {
+              feature.setStyle(new ol.style.Style({
+                image: new ol.style.Icon({
+                  src: 'https://openlayers.org/en/latest/examples/data/icon.png',
+                  scale: 1.2,
+                  color: 'red'
+                })
+              }));
+            }
+          });
+          loadview(stationName);
+      });
+    });
+  });
+}
+
+
+//loads single station view with station name, coordinates and averages
+function loadview(stationName){
+  let stationview=document.getElementById("stationview");
+  stationview.innerHTML="";
+  stationview.style.display="block";
+  fetch(`http://localhost:3000/api/stations?stationName=${stationName}`).then(response=>response.json())
+  .then(data => {
+    stationview.innerHTML+=`${data[0].Nimi} <br> Coordinates: ${data[0].x}, ${data[0].y} `;
+    fetch(`http://localhost:3000/api/journeys?stationName=${stationName}&count`).then(response=>response.json())
+    .then(data => {
+      stationview.innerHTML+=`<br>Departures: ${data[0]["COUNT(*)"]} Returns: ${data[1]["COUNT(*)"]}`;
+      fetch(`http://localhost:3000/api/avg?stationName=${stationName}`).then(response=>response.json())
+      .then(data => {
+        stationview.innerHTML+=`<br>Average distance of departure journeys: ${data[0]["AVG(Distance)"].toFixed(2)} <br>
+        Average distance of return journeys: ${data[1]["AVG(Distance)"].toFixed(2)}`;
       });
     });
   });
@@ -165,5 +206,4 @@ searchbutton.addEventListener('click', ()=>{
   }
   loadjourneys(param);
   loadstations([`stationName=${stationName}`]);
-
 });
