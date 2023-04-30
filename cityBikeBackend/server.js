@@ -83,6 +83,25 @@ app.get('/api/journeys', (req, res) => {
   });
 });
 
+// average calculating api
+app.get('/api/avg', (req, res) => {
+  let query = `SELECT AVG(Distance) FROM journeys`;
+  let param=[];
+  // check for additional query parameters
+  if (req.query.hasOwnProperty('stationName')) {
+    query += ` WHERE Dname LIKE ? COLLATE NOCASE UNION ALL SELECT AVG(Distance) FROM journeys WHERE Rname LIKE ? COLLATE NOCASE `;
+    param=[`%${req.query.stationName}%`,`%${req.query.stationName}%`];
+  }
+  citybikedata.all(query, param, (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send('Internal server error');
+    } else {
+      res.send(rows);
+    }
+  });
+});
+
 app.listen(3000, () => {
   console.log('Server listening on port 3000');
 });
