@@ -1,14 +1,14 @@
-var features=[]; //global variable that will contain all the points that will be drawn on the map
-const searchbutton=document.getElementById("searchbutton");
+var features = []; //global variable that will contain all the points that will be drawn on the map
+const searchbutton = document.getElementById("searchbutton");  // only real button that is always usable, so global variable.
 
 // initializing map view
 fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
   .then(response => response.json())
   .then(data => {
-    for(let i=0; i<data.length; i++){
+    for(let i = 0; i < data.length; i++){
       var point = new ol.geom.Point(ol.proj.fromLonLat([data[i].x, data[i].y]));
       // Create a new feature with the point geometry and add it to the global features variable
-      features.push( new ol.Feature({
+      features.push(new ol.Feature({
         geometry: point,
         name: data[i].Nimi
       }));
@@ -46,9 +46,9 @@ fetch('http://localhost:3000/api/stations')  //fetch the data from the backend
       if (feature) {
         var name = feature.get('name');
         // call the station with the name
-       loadstations([`stationName=${feature.values_.name}`]);
-       loadjourneys([`stationName=${feature.values_.name}`, `orderBy=Dname`]);
-       loadview(feature.values_.name)
+       loadStations([`stationName=${feature.values_.name}`]);
+       loadJourneys([`stationName=${feature.values_.name}`, `orderBy=Dname`]);
+       loadSingleStationView(feature.values_.name);
       }
    })
   })
@@ -71,72 +71,73 @@ var osmLayer = new ol.layer.Tile({
 map.addLayer(osmLayer);
 
 // loads a list of journeys by parameter and displays them in journeys table
-function loadjourneys(input){
-  let query='http://localhost:3000/api/journeys'
-  let jlist=document.getElementById('journeylist');
-  jlist.innerHTML=`<tr>
-                    <th>Departure station</th>
-                    <th>Return station</th>
-                    <th>Distance (km)</th>
-                    <th>Duration (min)</th>
-                  </tr>`
-  let pholder=''
+function loadJourneys(input){
+  let query = 'http://localhost:3000/api/journeys';
+  let jlist = document.getElementById('journeylist');
+  jlist.innerHTML = `<tr>
+                      <th>Departure station</th>
+                      <th>Return station</th>
+                      <th>Distance (km)</th>
+                      <th>Duration (min)</th>
+                      </tr>`;
+  let pholder = '';
   //check for parameters
-  if(input.length>0){
-    query+='?'
-    for(let i=0; i<input.length; i++){
-      query+=input[i]+'&';
+  if(input.length > 0){
+    query += '?';
+    for(let i = 0; i < input.length; i++){
+      query += input[i]+'&';
     }
   }
   // display data in the table created for journeys
-  fetch(query).then(response => response.json())
+  fetch(query)
+  .then(response => response.json())
   .then(data => {
-  for(let i=0; i<data.length; i++){
-    pholder+=`
-      <tr>
-        <td> ${data[i].Dname} </td>
-        <td> ${data[i].Rname} </td>
-        <td> ${((data[i].Distance)/1000).toFixed(2)} </td>
-        <td> ${((data[i].Duration)/60).toFixed(2)} </td>
-        <td>
-      </tr>
-            `;
+  for(let i = 0; i < data.length; i++){
+    pholder += `<tr>
+                  <td> ${data[i].Dname} </td>
+                  <td> ${data[i].Rname} </td>
+                  <td> ${((data[i].Distance)/1000).toFixed(2)} </td>
+                  <td> ${((data[i].Duration)/60).toFixed(2)} </td>
+                  <td>
+                </tr>`;
     }
-    jlist.innerHTML+=pholder
+    jlist.innerHTML += pholder;
   });
 }
 
 
-//same as loadjourneys but for stations
-function loadstations(input){
-  let query='http://localhost:3000/api/stations'
-  let slist=document.getElementById('stationlist');
-  slist.innerHTML=`<tr>
-                    <th>Station Name</th>
-                  </tr>`
-  let pholder=''
+//same as loadJourneys but for stations
+function loadStations(input){
+  let query = 'http://localhost:3000/api/stations';
+  let slist = document.getElementById('stationlist');
+  slist.innerHTML = `<tr>
+                      <th>Station Name</th>
+                    </tr>`
+  let pholder = '';
   //check for parameters
-  if(input.length>0){
-    query+='?'
-    for(let i=0; i<input.length; i++){
-      query+=input[i]+'&';
+  if(input.length > 0){
+    query += '?';
+    for(let i = 0; i < input.length; i++){
+      query += input[i]+'&';
     }
   }
   // display data in the table created for stations
-  fetch(query).then(response => response.json())
+  fetch(query)
+  .then(response => response.json())
   .then(data => {
-    for(let i=0; i<data.length; i++){
-      pholder+=`<tr>
-                  <td> <a href="#" class="station-link" stationx=${data[i].x} stationy=${data[i].y}> ${data[i].Nimi} </a> </td>
+    for(let i = 0; i < data.length; i++){
+      pholder += `<tr>
+                    <td> <a href="#" class="station-link" stationx=${data[i].x} stationy=${data[i].y}> ${data[i].Nimi} </a> </td>
                   </tr>`;
-                }
-      slist.innerHTML+=pholder;
+      }
+      slist.innerHTML += pholder;
+      // make all station names clickable with appropriate function
       const stationLinks = document.querySelectorAll(".station-link");
         stationLinks.forEach(link => {
           link.addEventListener("click", function(event) {
             event.preventDefault();
             const stationName = link.innerText;
-            loadjourneys([`stationName=${stationName}`]);
+            loadJourneys([`stationName=${stationName}`]);
             // center map to the selected station
             var newCenter = ol.proj.fromLonLat([link.getAttribute("stationx"), link.getAttribute("stationy")]);
             map.setView(new ol.View({
@@ -145,7 +146,7 @@ function loadstations(input){
           }));
           // highlight the selected station
           var vectorLayer = map.getAllLayers()[1];
-          var features=vectorLayer.getSource().getFeatures();
+          var features = vectorLayer.getSource().getFeatures();
           features.forEach(function(feature) {
             if (feature.get('name') === stationName) {
               feature.setStyle(new ol.style.Style({
@@ -157,7 +158,7 @@ function loadstations(input){
               }));
             }
           });
-          loadview(stationName);
+          loadSingleStationView(stationName);
       });
     });
   });
@@ -165,19 +166,22 @@ function loadstations(input){
 
 
 //loads single station view with station name, coordinates and averages
-function loadview(stationName){
-  let stationview=document.getElementById("stationview");
-  stationview.innerHTML="";
-  stationview.style.display="block";
-  fetch(`http://localhost:3000/api/stations?stationName=${stationName}`).then(response=>response.json())
+function loadSingleStationView(stationName){
+  let stationview = document.getElementById("stationview");
+  stationview.innerHTML = '';
+  stationview.style.display = 'block';
+  fetch(`http://localhost:3000/api/stations?stationName=${stationName}`)
+  .then(response=> response.json())
   .then(data => {
-    stationview.innerHTML+=`${data[0].Nimi} <br> Coordinates: ${data[0].x}, ${data[0].y} `;
-    fetch(`http://localhost:3000/api/journeys?stationName=${stationName}&count`).then(response=>response.json())
+    stationview.innerHTML += `${data[0].Nimi} <br> Coordinates: ${data[0].x}, ${data[0].y} `;
+    fetch(`http://localhost:3000/api/journeys?stationName=${stationName}&count`)
+    .then(response=> response.json())
     .then(data => {
-      stationview.innerHTML+=`<br>Departures: ${data[0]["COUNT(*)"]} Returns: ${data[1]["COUNT(*)"]}`;
-      fetch(`http://localhost:3000/api/avg?stationName=${stationName}`).then(response=>response.json())
+      stationview.innerHTML += `<br>Departures: ${data[0]["COUNT(*)"]} Returns: ${data[1]["COUNT(*)"]}`;
+      fetch(`http://localhost:3000/api/avg?stationName=${stationName}`)
+      .then(response=> response.json())
       .then(data => {
-        stationview.innerHTML+=`<br>Average distance of departure journeys: ${data[0]["AVG(Distance)"].toFixed(2)} <br>
+        stationview.innerHTML += `<br>Average distance of departure journeys: ${data[0]["AVG(Distance)"].toFixed(2)} <br>
         Average distance of return journeys: ${data[1]["AVG(Distance)"].toFixed(2)}`;
       });
     });
@@ -185,25 +189,25 @@ function loadview(stationName){
 }
 
 // initialize the journeys table with default, unsorted page 1
-loadjourneys([]);
+loadJourneys([]);
 // initialize the stations table
-loadstations([]);
+loadStations([]);
 
-// search interface function, gets the parameters from the table and calls loadjourneys
-searchbutton.addEventListener('click', ()=>{
-  let param=[];
+// search interface function, gets the parameters from the table and calls loadJourneys and loadStations
+searchbutton.addEventListener('click', ()=> {
+  let param = [];
   const stationName = document.getElementById('stationName').value;
   const orderBy = document.getElementById('orderBy').value;
   const pageNum = document.getElementById('pageNum').value;
-  if(stationName.length>0){
+  if(stationName.length > 0){
     param.push(`stationName=${stationName}`);
   }
-  if(orderBy!='None'){
+  if(orderBy != 'None'){
     param.push(`orderBy=${orderBy}`);
   }
-  if(pageNum!=1){
+  if(pageNum !=1 ){
     param.push(`pageNum=${pageNum}`);
   }
-  loadjourneys(param);
-  loadstations([`stationName=${stationName}`]);
+  loadJourneys(param);
+  loadStations([`stationName=${stationName}`]);
 });
